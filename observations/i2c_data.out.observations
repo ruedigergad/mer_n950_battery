@@ -1,0 +1,130 @@
+
+
+
+###########
+# General #
+###########
+
+
+0x0c and 0x0d seem to belong together and represent a word.
+0x0c seems to be the least significant byte.
+
+0x0e and 0x0f also seem to represent a word with 0x0e being the least significant byte.
+Same holds for 0x10 and 0x11, with 0x10 being the least significant byte.
+
+Generally the byte order appears to be least significant byte first.
+
+0x00 and 0x01 can be changed by sending data, presumably "commands", as words to the address 0x00.
+Sending, e.g., 0x0001 results in the value 0x0521 being "returned". 
+We currently assume that this indicates the controller type.
+
+Fields 0x02 to 0x09 so far showed the following for now constant values:
+2  3  4  5  6  7  8  9
+01 01 3f 31 e0 00 06 00
+
+Fields 0x16 to 0x25 and 0x09 to 0x3b seem to be constant all the time.
+For fields 0x26 to 0x28 we could only identify two different combinations of values during our observations:
+30 f8 c8 and 9c ff 0a.
+So far we could not identify a reason or a systematic behavior that could relate to the switch between these two "states".
+
+The following observations were taken with time differences of several hours for charging and discharging states.
+For fields that had been earlier identified as variable we put "v" at the corresponding positions.
+Discharging
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f   
+10: vv vv vv vv vv vv ff 7f 00 00 0a 00 0a 00 46 0a    ".?.?1.?..?.?.F?
+20: ca 0d 64 00 64 00 30 f8 c8 00 ff ff 18 fc 64 00    ??d.d.0??...??d.
+30: 00 00 50 fb 20 21 06 00 00 00 07 00 XX XX XX XX    ..P? !?...?.XXXX
+
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f   
+10: vv vv vv vv vv vv ff 7f 00 00 0a 00 0a 00 46 0a    ?...?;.?..?.?.F?
+20: ca 0d 64 00 64 00 9c ff 0a 00 ff ff 18 fc 64 00    ??d.d.?.?...??d.
+30: 00 00 50 fb 20 21 06 00 00 00 07 00 XX XX XX XX    ..P? !?...?.XXXX
+
+Charging
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f   
+10: vv vv vv vv vv vv ff 7f 00 00 0a 00 0a 00 46 0a    o??.?@.?..?.?.F?
+20: ca 0d 64 00 64 00 9c ff 0a 00 ff ff 18 fc 64 00    ??d.d.?.?...??d.
+30: 00 00 50 fb 20 21 06 00 00 00 07 00 XX XX XX XX    ..P? !?...?.XXXX
+
+Discharging
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f   
+10: vv vv vv vv vv vv ff 7f 00 00 0a 00 0a 00 46 0a    ?.?.}z.?..?.?.F?
+20: ca 0d 64 00 64 00 9c ff 0a 00 ff ff 18 fc 64 00    ??d.d.?.?...??d.
+30: 00 00 50 fb 20 21 06 00 00 00 07 00 XX XX XX XX    ..P? !?...?.XXXX
+
+
+The reported value for 0x0a+0x0b is most times in the magnitude of 0x0b9d and varies only slightly when charging or discharging.
+Hence, this could indicate the voltage or something similar.
+
+####################
+# When Discharging #
+####################
+
+In the general trend 0x0c and 0x0d decrease. 
+However, the decrease is not monotone but is subject to some (minor) fluctuations.
+
+Both 0x0e+0x0f and 0x10+0x11 show very high values in the magnitude of 0xffXX with fluctuations in the least significant byte.
+
+0x12+0x13 show a very slow decrease. The change from 0x0002 to 0x0001, e.g., took about 1 1/2 hour.
+This field also showed an underflow from 0x0000 to 0xffff and even kept "decreasing" to 0xfffe before the charge was connected.
+
+0x14+0x15 rapidly counts downwards (decrements) and regularly underflows starting again from 0xffff.
+Guess: could the difference between two subsequent values indicate something like the discharge rate?
+
+
+#################
+# When Charging #
+#################
+
+0x0c and 0x0d increase.
+Again, there may be fluctuations.
+Highest, observed value was 0x1051.
+This value stayed constant for about 10 minutes before the charger was detached again.
+
+
+When the charger is connected both 0x0e+0x0f and 0x10+0x11 "jump" to a value that seems to indicate something relating to the charging state.
+In the gathered data it could be observed that both "jumped" to values in the order of 0x0100.
+From there on both fields increased slightly up to values in the range of 0x0200.
+After some time these fields then decreased again down to values in the order of 0x080.
+
+
+0x12+0x13 increases faster than it decreased during discharge.
+This increase is still slower than the others observed before.
+So far no fluctuations could be observed.
+Highest observed value was 0x0018
+
+
+0x14+0x15 rapidly counts upwards (icrements) and regularly overflows starting again from 0x0000.
+Guess: could the difference between two subsequent values indicate something like the charge rate?
+
+###########
+# Summary #
+###########
+
+The following shows a summary of the findings. 
+"C" indicates the fields used for command I/O including the "display" of "returned" values.
+"k" indicates fields that had so far observed containing constant values.
+"v" indicates fields with variable values.
+"B" is used to indicate the fields for which so far only two different "states" could be observed.
+
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+00: CC CC kk kk kk kk kk kk kk kk vv vv vv vv vv vv    !????1?.?.?????.
+10: vv vv vv vv vv vv kk kk kk kk kk kk kk kk kk kk    ?.?..;.?..?.?.F?
+20: kk kk kk kk kk kk BB BB BB kk kk kk kk kk kk kk    ??d.d.0??...??d.
+30: kk kk kk kk kk kk kk kk kk kk kk kk XX XX XX XX    ..P? !?...?.XXXX
+
+
+Wild Guesses:
+0x0a+0x0b -> Voltage [mV]?
+0x0c+0x0d -> Available Energy [mWh], Remaining Capacity [mAh]?
+             (This seems to have a much higher resolution than 0x12+0x13.)
+0x0e+0x0f -> Time To Full [Minutes]?
+0x10+0x11 -> Similar to 0x0e+0x0f? 
+             They show very similar data.
+0x12+0x13 -> State of Charge [%]?
+0x14+0x15 -> AtRate [mA], Average Current [mA]?
+             Can be used to calculate a difference between subsequent measurements.
+             Else, this would be pretty useless.
+
+
+
